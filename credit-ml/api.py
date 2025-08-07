@@ -2,8 +2,10 @@
 import joblib
 import pandas as pd
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 def feature_engineering(df):
     df["inflow_outflow_ratio"] = df["mpesa_inflow_freq"] / (df["mpesa_outflow_freq"] + 1)
@@ -36,3 +38,4 @@ def predict():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
