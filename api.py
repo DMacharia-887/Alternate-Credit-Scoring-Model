@@ -1,17 +1,19 @@
-# api.py
 import joblib
 import pandas as pd
 from flask import Flask, request, jsonify
+from flask_cors import CORS    # <-- FIX: use _ not space
 
-app = Flask(__name__)
+app = Flask(__name__)          # <-- FIX: __name__ (not _name)
+CORS(app)                      # <-- this enables CORS
 
 def feature_engineering(df):
+    # Add your engineered features as columns to df
     df["inflow_outflow_ratio"] = df["mpesa_inflow_freq"] / (df["mpesa_outflow_freq"] + 1)
     df["airtime_per_topup"] = df["avg_airtime"] / (df["airtime_topup_count"] + 1)
     df["late_bills_ratio"] = df["utility_bills_paid_late"] / (df["utility_bills_total"] + 1)
     return df
 
-# Load your trained model
+# Load your trained model (use absolute or reliable path if deploying)
 model = joblib.load("final_credit_model.joblib")
 
 FEATURES = [
@@ -23,11 +25,19 @@ FEATURES = [
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.json
+
+    # Defensive: If data is None or not a dict, return error
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid input JSON"}), 400
+
     df = pd.DataFrame([data])
+
     df = feature_engineering(df)
     X = df[FEATURES]
-    proba = model.predict_proba(X)[0, 1]
+
+    proba = model.predict_proba(X)[0, 1]    # Use X not x, fix brackets!
     pred = int(model.predict(X)[0])
+
     return jsonify({
         "probability_good": float(proba),
         "probability_bad": float(1 - proba),
@@ -36,3 +46,4 @@ def predict():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
